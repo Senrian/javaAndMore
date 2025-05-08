@@ -1,0 +1,11 @@
+/Users/sixinran/IdeaProjects/javaAndMore/app-demo/seata-demo/common-service/src/main/java/com/example/common/config/DataSourceConfiguration.java
+/Users/sixinran/IdeaProjects/javaAndMore/app-demo/seata-demo/common-service/src/main/java/com/example/common/dto/CommonResult.java
+/Users/sixinran/IdeaProjects/javaAndMore/app-demo/seata-demo/common-service/src/main/java/com/example/common/dto/OrderDTO.java
+/Users/sixinran/IdeaProjects/javaAndMore/app-demo/seata-demo/common-service/src/main/java/com/example/common/entity/Account.java
+/Users/sixinran/IdeaProjects/javaAndMore/app-demo/seata-demo/common-service/src/main/java/com/example/common/entity/Order.java
+/Users/sixinran/IdeaProjects/javaAndMore/app-demo/seata-demo/common-service/src/main/java/com/example/common/entity/Product.java
+/Users/sixinran/IdeaProjects/javaAndMore/app-demo/seata-demo/common-service/src/main/java/com/example/common/exception/BusinessException.java
+/Users/sixinran/IdeaProjects/javaAndMore/app-demo/seata-demo/common-service/src/main/java/com/example/common/exception/GlobalExceptionHandler.java
+/Users/sixinran/IdeaProjects/javaAndMore/app-demo/seata-demo/common-service/src/main/java/com/example/common/feign/AccountService.java
+/Users/sixinran/IdeaProjects/javaAndMore/app-demo/seata-demo/common-service/src/main/java/com/example/common/feign/OrderService.java
+/Users/sixinran/IdeaProjects/javaAndMore/app-demo/seata-demo/common-service/src/main/java/com/example/common/feign/StorageService.java

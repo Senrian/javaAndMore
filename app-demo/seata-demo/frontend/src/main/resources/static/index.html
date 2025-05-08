@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seata 分布式事务示例</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+        .card {
+            margin-bottom: 20px;
+        }
+        .spinner-border {
+            display: none;
+            margin-left: 10px;
+        }
+        .success-alert, .error-alert {
+            display: none;
+            margin-top: 20px;
+        }
+        .transaction-log {
+            height: 300px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+            margin-top: 20px;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+        }
+        .log-time {
+            color: #6c757d;
+            margin-right: 10px;
+        }
+        .log-success {
+            color: #198754;
+        }
+        .log-error {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 mb-4">
+                <h1 class="text-center">Seata 分布式事务示例</h1>
+                <p class="text-center lead">这是一个使用 Seata 实现分布式事务的演示应用</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">创建订单</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="orderForm">
+                            <div class="mb-3">
+                                <label for="userId" class="form-label">用户ID</label>
+                                <input type="number" class="form-control" id="userId" value="1" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="productId" class="form-label">商品ID</label>
+                                <input type="number" class="form-control" id="productId" value="1" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="count" class="form-label">数量</label>
+                                <input type="number" class="form-control" id="count" value="10" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="money" class="form-label">金额</label>
+                                <input type="number" class="form-control" id="money" value="100" required>
+                            </div>
+                            <div class="d-flex">
+                                <button type="button" class="btn btn-primary" id="placeOrderBtn">
+                                    正常下单
+                                    <span class="spinner-border spinner-border-sm" id="normalSpinner"></span>
+                                </button>
+                                <button type="button" class="btn btn-danger ms-2" id="placeOrderWithExceptionBtn">
+                                    异常下单
+                                    <span class="spinner-border spinner-border-sm" id="exceptionSpinner"></span>
+                                </button>
+                            </div>
+                        </form>
+                        <div class="alert alert-success success-alert" role="alert" id="successAlert">
+                            下单成功！订单ID: <span id="orderId"></span>
+                        </div>
+                        <div class="alert alert-danger error-alert" role="alert" id="errorAlert">
+                            下单失败！错误信息: <span id="errorMsg"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">事务日志</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="transaction-log" id="transactionLog"></div>
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-secondary" id="clearLogBtn">清空日志</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const placeOrderBtn = document.getElementById('placeOrderBtn');
+            const placeOrderWithExceptionBtn = document.getElementById('placeOrderWithExceptionBtn');
+            const normalSpinner = document.getElementById('normalSpinner');
+            const exceptionSpinner = document.getElementById('exceptionSpinner');
+            const successAlert = document.getElementById('successAlert');
+            const errorAlert = document.getElementById('errorAlert');
+            const orderId = document.getElementById('orderId');
+            const errorMsg = document.getElementById('errorMsg');
+            const transactionLog = document.getElementById('transactionLog');
+            const clearLogBtn = document.getElementById('clearLogBtn');
+
+            function addLogEntry(message, isError = false) {
+                const now = new Date();
+                const time = now.toLocaleTimeString();
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+                logEntry.innerHTML = `<span class="log-time">[${time}]</span> <span class="${isError ? 'log-error' : 'log-success'}">${message}</span>`;
+                transactionLog.appendChild(logEntry);
+                transactionLog.scrollTop = transactionLog.scrollHeight;
+            }
+
+            function getOrderData() {
+                return {
+                    userId: parseInt(document.getElementById('userId').value),
+                    productId: parseInt(document.getElementById('productId').value),
+                    count: parseInt(document.getElementById('count').value),
+                    money: parseFloat(document.getElementById('money').value)
+                };
+            }
+
+            function resetAlerts() {
+                successAlert.style.display = 'none';
+                errorAlert.style.display = 'none';
+            }
+
+            function sendOrderRequest(url, orderData, spinner, successCallback, errorCallback) {
+                addLogEntry(`正在发送请求到 ${url}`);
+                
+                // 添加跨域请求所需的选项
+                const fetchOptions = {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(orderData),
+                    mode: 'cors', // 确保启用跨域请求
+                    credentials: 'omit' // 不发送cookie等凭证
+                };
+                
+                fetch(url, fetchOptions)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP 错误! 状态码: ${response.status}, 状态文本: ${response.statusText}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        spinner.style.display = 'none';
+                        placeOrderBtn.disabled = false;
+                        placeOrderWithExceptionBtn.disabled = false;
+
+                        if (data.code === 200) {
+                            successCallback(data);
+                        } else {
+                            errorCallback(new Error(data.message || '未知错误'));
+                        }
+                    })
+                    .catch(error => {
+                        spinner.style.display = 'none';
+                        placeOrderBtn.disabled = false;
+                        placeOrderWithExceptionBtn.disabled = false;
+                        
+                        // 更详细的错误处理
+                        let detailedError = error.message;
+                        if (error.message === 'Failed to fetch') {
+                            detailedError = '网络请求失败，可能原因：\n1. 服务器未启动或不可访问\n2. 跨域请求被阻止\n3. 网络连接问题';
+                            addLogEntry(`网络错误: ${detailedError}`, true);
+                        } else {
+                            addLogEntry(`请求错误: ${detailedError}`, true);
+                        }
+                        
+                        errorCallback(new Error(detailedError));
+                    });
+            }
+
+            placeOrderBtn.addEventListener('click', function() {
+                resetAlerts();
+                normalSpinner.style.display = 'inline-block';
+                placeOrderBtn.disabled = true;
+                placeOrderWithExceptionBtn.disabled = true;
+
+                const orderData = getOrderData();
+                addLogEntry(`开始正常下单，参数: 用户ID=${orderData.userId}, 商品ID=${orderData.productId}, 数量=${orderData.count}, 金额=${orderData.money}`);
+
+                sendOrderRequest(
+                    'http://localhost:8088/business/placeOrder',
+                    orderData,
+                    normalSpinner,
+                    function(data) {
+                        orderId.textContent = data.data;
+                        successAlert.style.display = 'block';
+                        addLogEntry(`下单成功，订单ID: ${data.data}`);
+                    },
+                    function(error) {
+                        errorMsg.textContent = error.message;
+                        errorAlert.style.display = 'block';
+                        addLogEntry(`下单失败，错误: ${error.message}`, true);
+                    }
+                );
+            });
+
+            placeOrderWithExceptionBtn.addEventListener('click', function() {
+                resetAlerts();
+                exceptionSpinner.style.display = 'inline-block';
+                placeOrderBtn.disabled = true;
+                placeOrderWithExceptionBtn.disabled = true;
+
+                const orderData = getOrderData();
+                addLogEntry(`开始异常下单测试，参数: 用户ID=${orderData.userId}, 商品ID=${orderData.productId}, 数量=${orderData.count}, 金额=${orderData.money}`);
+
+                sendOrderRequest(
+                    'http://localhost:8088/business/placeOrderWithException',
+                    orderData,
+                    exceptionSpinner,
+                    function(data) {
+                        orderId.textContent = data.data;
+                        successAlert.style.display = 'block';
+                        addLogEntry(`异常下单测试成功，订单ID: ${data.data}`);
+                    },
+                    function(error) {
+                        errorMsg.textContent = error.message;
+                        errorAlert.style.display = 'block';
+                        addLogEntry(`异常下单测试完成，预期事务已回滚，错误信息: ${error.message}`, true);
+                    }
+                );
+            });
+
+            clearLogBtn.addEventListener('click', function() {
+                transactionLog.innerHTML = '';
+            });
+
+            // 初始化日志
+            addLogEntry('系统准备就绪，可以开始测试分布式事务...');
+        });
+    </script>
+</body>
+</html> 

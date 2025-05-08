@@ -1,0 +1,66 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: order-service
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://81.70.252.170:3306/common?useUnicode=true&characterEncoding=utf-8&useSSL=false
+    username: common
+    password: 4ccymwAhc5Y7GsPN
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 81.70.252.170:8848
+    loadbalancer:
+      ribbon:
+        enabled: false
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.example.common.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+
+seata:
+  enabled: true
+  application-id: ${spring.application.name}
+  tx-service-group: demo-tx-group
+  service:
+    vgroup-mapping:
+      demo-tx-group: default
+    grouplist:
+      default: 127.0.0.1:8091
+  registry:
+    type: file
+  config:
+    type: file
+  client:
+    rm:
+      report-success-enable: true
+      table-meta-check-enable: false
+      async-commit-buffer-limit: 10000
+      lock:
+        retry-times: 30
+        retry-interval: 10
+    tm:
+      commit-retry-count: 5
+      rollback-retry-count: 5
+      default-global-transaction-timeout: 60000
+    undo:
+      data-validation: true
+      log-serialization: jackson
+      log-table: undo_log
+      only-care-update-columns: true
+
+logging:
+  level:
+    io.seata: debug
+    com.example: debug
+    io.seata.core.context: trace
+    org.springframework.transaction: debug 
