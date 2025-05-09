@@ -36,7 +36,7 @@ MCP (Model Context Protocol) 是一种开放的通信协议，旨在标准化大
 项目默认使用以下数据库配置：
 
 ```properties
-spring.datasource.url=jdbc:mysql://81.70.252.170:3306/common?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+spring.datasource.url=jdbc:mysql://[your db]:3306/common?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
 spring.datasource.username=common
 spring.datasource.password=4ccymwAhc5Y7GsPN
 ```

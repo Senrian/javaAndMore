@@ -5,7 +5,7 @@ spring:
   application:
     name: mcp-demo
   datasource:
-    url: jdbc:mysql://81.70.252.170:3306/common?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://[your db]:3306/common?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
     username: common
     password: 4ccymwAhc5Y7GsPN
     driver-class-name: com.mysql.cj.jdbc.Driver
