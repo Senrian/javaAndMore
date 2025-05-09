@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Demo - 聊天</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.min.css">
+    <style>
+        body {
+            background-color: #f5f7f9;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .navbar {
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .chat-container {
+            flex-grow: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+        .chat-input {
+            padding: 1rem;
+            background-color: white;
+            border-top: 1px solid #e5e5e5;
+        }
+        .message {
+            max-width: 80%;
+            margin-bottom: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 1rem;
+        }
+        .message-user {
+            background-color: #007bff;
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 0.25rem;
+        }
+        .message-assistant {
+            background-color: #f1f3f5;
+            border-bottom-left-radius: 0.25rem;
+            white-space: pre-wrap;
+        }
+        .message-system {
+            background-color: #fdf5d3;
+            border-radius: 0.5rem;
+            margin: 1rem auto;
+            max-width: 90%;
+            text-align: center;
+            padding: 0.5rem 1rem;
+            font-style: italic;
+        }
+        .typing-indicator {
+            display: inline-flex;
+            align-items: center;
+            margin: 0.5rem 0;
+        }
+        .typing-indicator span {
+            height: 8px;
+            width: 8px;
+            background-color: #666;
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 1px;
+            animation: typing 1.3s infinite;
+        }
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes typing {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-5px);
+            }
+        }
+        pre {
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            background-color: #f8f9fa;
+            overflow-x: auto;
+        }
+        code {
+            font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 0.9em;
+        }
+        .model-badge {
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            font-size: 0.7rem;
+        }
+        .message-container {
+            position: relative;
+        }
+        .toolbox {
+            position: absolute;
+            right: 1rem;
+            bottom: 0.5rem;
+            display: none;
+        }
+        .message-container:hover .toolbox {
+            display: flex;
+        }
+        .stream-button {
+            position: absolute;
+            bottom: 1rem;
+            right: 5rem;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white py-3">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="/">
+                <i class="bi bi-chat-square-text-fill me-2 text-primary"></i>
+                <span class="fw-bold">MCP Demo</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/demo">功能演示</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/about">关于MCP</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 聊天容器 -->
+    <div class="chat-container">
+        <!-- 聊天消息区域 -->
+        <div class="chat-messages" id="chat-messages">
+            <!-- 初始提示消息 -->
+            <div class="message message-system" th:if="${mcpSession == null}">
+                这是一个新对话，请在下方输入您的问题...
+            </div>
+            
+            <!-- 加载现有会话的消息 -->
+            <div th:if="${messages != null}" th:each="msg : ${messages}">
+                <div class="message-container" th:if="${msg.role == 'user'}">
+                    <div class="message message-user" th:text="${msg.content}">用户消息</div>
+                </div>
+                
+                <div class="message-container" th:if="${msg.role == 'assistant'}">
+                    <div class="message message-assistant assistant-message" th:utext="${#strings.replace(#strings.escapeXml(msg.content), '\\n', '<br/>')}">助手消息</div>
+                    <span class="badge bg-secondary model-badge" th:if="${mcpSession}" th:text="${mcpSession.model}">gpt-3.5-turbo</span>
+                </div>
+                
+                <div class="message-container" th:if="${msg.role == 'system'}">
+                    <div class="message message-system" th:text="${msg.content}">系统消息</div>
+                </div>
+            </div>
+            
+            <!-- 输入提示 -->
+            <div id="typing-indicator" class="typing-indicator d-none">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+
+        <!-- 聊天输入区域 -->
+        <div class="chat-input">
+            <div class="container">
+                <div class="row g-2">
+                    <div class="col-md-10">
+                        <textarea id="user-input" class="form-control" placeholder="输入您的问题..." rows="2"></textarea>
+                    </div>
+                    <div class="col-md-2 d-grid">
+                        <button id="send-button" class="btn btn-primary">
+                            <i class="bi bi-send me-1"></i>发送
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="row g-2 mt-2">
+                    <div class="col-md-6">
+                        <select id="model-select" class="form-select">
+                            <option th:if="${mcpSession}" th:text="${mcpSession.model}" th:value="${mcpSession.model}" selected>gpt-3.5-turbo</option>
+                            <option th:unless="${mcpSession}" th:each="model : ${models}" th:text="${model}" th:value="${model}" th:selected="${model == defaultModel}">模型名称</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" id="stream-toggle" checked>
+                            <label class="form-check-label" for="stream-toggle">流式响应</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.2.4/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.7.0/build/highlight.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatMessages = document.getElementById('chat-messages');
+            const userInput = document.getElementById('user-input');
+            const sendButton = document.getElementById('send-button');
+            const modelSelect = document.getElementById('model-select');
+            const streamToggle = document.getElementById('stream-toggle');
+            const typingIndicator = document.getElementById('typing-indicator');
+            
+            // 当前会话ID
+            let sessionId = '';
+            
+            // 如果URL中有会话ID，使用它
+            const urlPath = window.location.pathname;
+            if (urlPath.includes('/chat/')) {
+                sessionId = urlPath.split('/chat/')[1];
+            }
+            
+            // 初始化，滚动到底部
+            scrollToBottom();
+            
+            // 监听发送按钮点击
+            sendButton.addEventListener('click', sendMessage);
+            
+            // 监听Enter键
+            userInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+            
+            // 发送消息函数
+            function sendMessage() {
+                const message = userInput.value.trim();
+                if (!message) return;
+                
+                // 清空输入框
+                userInput.value = '';
+                
+                // 添加用户消息到聊天界面
+                appendMessage('user', message);
+                
+                // 显示输入中动画
+                typingIndicator.classList.remove('d-none');
+                
+                // 准备请求数据
+                const requestData = {
+                    sessionId: sessionId,
+                    model: modelSelect.value,
+                    messages: [{
+                        role: 'user',
+                        content: message
+                    }]
+                };
+                
+                // 决定是否使用流式响应
+                if (streamToggle.checked) {
+                    // 使用流式响应
+                    streamChat(requestData);
+                } else {
+                    // 使用普通响应
+                    regularChat(requestData);
+                }
+            }
+            
+            // 正常请求
+            function regularChat(requestData) {
+                fetch('/api/mcp/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // 隐藏输入中动画
+                    typingIndicator.classList.add('d-none');
+                    
+                    // 更新会话ID
+                    if (data.sessionId) {
+                        sessionId = data.sessionId;
+                        if (window.location.pathname === '/chat') {
+                            history.pushState({}, '', `/chat/${sessionId}`);
+                        }
+                    }
+                    
+                    // 添加助手消息
+                    if (data.message) {
+                        appendMessage('assistant', data.message.content, data.model);
+                    } else if (data.error) {
+                        appendMessage('system', `错误: ${data.error}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    typingIndicator.classList.add('d-none');
+                    appendMessage('system', '发生错误，请稍后重试');
+                });
+            }
+            
+            // 流式响应
+            function streamChat(requestData) {
+                // 创建一个临时的消息容器
+                const tempMessageContainer = document.createElement('div');
+                tempMessageContainer.className = 'message-container';
+                
+                const tempMessage = document.createElement('div');
+                tempMessage.className = 'message message-assistant';
+                tempMessage.textContent = '';
+                
+                const modelBadge = document.createElement('span');
+                modelBadge.className = 'badge bg-secondary model-badge';
+                modelBadge.textContent = modelSelect.value;
+                
+                tempMessageContainer.appendChild(tempMessage);
+                tempMessageContainer.appendChild(modelBadge);
+                chatMessages.appendChild(tempMessageContainer);
+                scrollToBottom();
+                
+                let eventSource = null;
+                
+                // 初始化请求
+                fetch('/api/mcp/chat/stream', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    // 创建EventSource连接
+                    eventSource = new EventSource(`/api/mcp/chat/stream?sessionId=${sessionId}&model=${modelSelect.value}`);
+                    
+                    // 监听服务器发送的消息
+                    eventSource.onmessage = function(event) {
+                        try {
+                            const data = JSON.parse(event.data);
+                            
+                            // 隐藏输入中动画
+                            typingIndicator.classList.add('d-none');
+                            
+                            // 更新会话ID
+                            if (data.sessionId && !sessionId) {
+                                sessionId = data.sessionId;
+                                if (window.location.pathname === '/chat') {
+                                    history.pushState({}, '', `/chat/${sessionId}`);
+                                }
+                            }
+                            
+                            // 检查是否有错误
+                            if (data.error) {
+                                console.error('Server error:', data.error);
+                                tempMessage.textContent = `错误: ${data.error}`;
+                                if (eventSource) {
+                                    eventSource.close();
+                                }
+                                return;
+                            }
+                            
+                            // 更新临时消息内容
+                            if (data.message) {
+                                tempMessage.innerHTML = formatMessage(data.message.content);
+                                scrollToBottom();
+                            }
+                            
+                            // 如果是最后一条消息，关闭连接
+                            if (data.done) {
+                                if (eventSource) {
+                                    eventSource.close();
+                                }
+                            }
+                        } catch (e) {
+                            console.error('Error processing message:', e);
+                            tempMessage.textContent = '处理消息时出错: ' + e.message;
+                            if (eventSource) {
+                                eventSource.close();
+                            }
+                        }
+                    };
+                    
+                    eventSource.onerror = function(err) {
+                        console.error('EventSource error', err);
+                        if (eventSource) {
+                            eventSource.close();
+                        }
+                        typingIndicator.classList.add('d-none');
+                        
+                        // 如果临时消息为空，显示错误
+                        if (!tempMessage.textContent || tempMessage.textContent.trim() === '') {
+                            tempMessage.textContent = '连接错误，请稍后重试';
+                        }
+                    };
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    typingIndicator.classList.add('d-none');
+                    tempMessage.textContent = '请求错误: ' + error.message;
+                });
+            }
+            
+            // 添加消息到聊天界面
+            function appendMessage(role, content, model) {
+                const messageContainer = document.createElement('div');
+                messageContainer.className = 'message-container';
+                
+                const message = document.createElement('div');
+                message.className = `message message-${role}`;
+                
+                if (role === 'assistant') {
+                    message.innerHTML = formatMessage(content);
+                    message.classList.add('assistant-message');
+                    
+                    if (model) {
+                        const modelBadge = document.createElement('span');
+                        modelBadge.className = 'badge bg-secondary model-badge';
+                        modelBadge.textContent = model;
+                        messageContainer.appendChild(modelBadge);
+                    }
+                } else {
+                    message.textContent = content;
+                }
+                
+                messageContainer.appendChild(message);
+                chatMessages.appendChild(messageContainer);
+                
+                scrollToBottom();
+                
+                // 为代码块添加语法高亮
+                if (role === 'assistant') {
+                    document.querySelectorAll('pre code').forEach((block) => {
+                        hljs.highlightElement(block);
+                    });
+                }
+            }
+            
+            // 格式化消息，支持Markdown
+            function formatMessage(content) {
+                // 将\n替换为<br>
+                let formatted = content.replace(/\n/g, '<br>');
+                
+                // 处理代码块
+                formatted = formatted.replace(/```(\w*)([\s\S]*?)```/g, function(match, language, code) {
+                    language = language || 'plaintext';
+                    return `<pre><code class="language-${language}">${code}</code></pre>`;
+                });
+                
+                return formatted;
+            }
+            
+            // 滚动到底部
+            function scrollToBottom() {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -62,3 +62,4 @@ sessionStore/
 .attach_pid*
 hs_err_pid*
 .flattened-pom.xml
+./promptOfStatic.md

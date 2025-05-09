@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Demo - 功能演示</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.min.css">
+    <style>
+        body {
+            background-color: #f5f7f9;
+        }
+        .navbar {
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .main-container {
+            min-height: calc(100vh - 150px);
+        }
+        .demo-card {
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s;
+            height: 100%;
+            margin-bottom: 2rem;
+        }
+        .demo-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+        pre {
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin: 1rem 0;
+            background-color: #f8f9fa;
+            overflow-x: auto;
+        }
+        code {
+            font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 0.9em;
+        }
+        .nav-pills .nav-link.active {
+            background-color: #0d6efd;
+        }
+        .tab-content {
+            padding: 1.5rem;
+            background-color: #fff;
+            border-radius: 0 0.5rem 0.5rem 0.5rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        .demo-icon {
+            font-size: 2rem;
+            color: #0d6efd;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white py-3">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="/">
+                <i class="bi bi-chat-square-text-fill me-2 text-primary"></i>
+                <span class="fw-bold">MCP Demo</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/demo">功能演示</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/about">关于MCP</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区 -->
+    <div class="container main-container py-5">
+        <!-- 标题和简介 -->
+        <div class="text-center mb-5">
+            <h1 class="display-5 fw-bold">MCP 功能演示</h1>
+            <p class="lead text-muted col-lg-8 mx-auto">通过实际案例了解 MCP 协议的核心功能和使用方法</p>
+        </div>
+
+        <!-- 演示导航 -->
+        <ul class="nav nav-pills mb-4" id="demo-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="basic-tab" data-bs-toggle="pill" data-bs-target="#basic" type="button" role="tab" aria-controls="basic" aria-selected="true">基础功能</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="stream-tab" data-bs-toggle="pill" data-bs-target="#stream" type="button" role="tab" aria-controls="stream" aria-selected="false">流式响应</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tools-tab" data-bs-toggle="pill" data-bs-target="#tools" type="button" role="tab" aria-controls="tools" aria-selected="false">工具调用</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="multimodal-tab" data-bs-toggle="pill" data-bs-target="#multimodal" type="button" role="tab" aria-controls="multimodal" aria-selected="false">多模态</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="api-tab" data-bs-toggle="pill" data-bs-target="#api" type="button" role="tab" aria-controls="api" aria-selected="false">API文档</button>
+            </li>
+        </ul>
+
+        <!-- 演示内容 -->
+        <div class="tab-content" id="demo-content">
+            <!-- 基础功能 -->
+            <div class="tab-pane fade show active" id="basic" role="tabpanel" aria-labelledby="basic-tab">
+                <h3 class="mb-4">基础对话功能</h3>
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="demo-card p-4">
+                            <div class="demo-icon">
+                                <i class="bi bi-chat-dots"></i>
+                            </div>
+                            <h4>会话管理</h4>
+                            <p>MCP协议支持创建、获取、列出和删除会话，每个会话有唯一ID和上下文历史。</p>
+                            <a href="/chat" class="btn btn-primary">体验对话</a>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="demo-card p-4">
+                            <div class="demo-icon">
+                                <i class="bi bi-gear"></i>
+                            </div>
+                            <h4>模型选择</h4>
+                            <p>支持多种大语言模型，可以根据需求选择不同模型，如GPT-3.5、GPT-4、文心一言等。</p>
+                            <a href="/chat" class="btn btn-primary">选择模型</a>
+                        </div>
+                    </div>
+                </div>
+
+                <h4 class="mt-5 mb-3">示例代码</h4>
+                <pre><code class="language-java">// 创建MCP请求
+McpRequest request = McpRequest.builder()
+    .model("gpt-3.5-turbo")
+    .messages(List.of(
+        McpMessageDto.builder()
+            .role("user")
+            .content("你好，请介绍一下MCP协议")
+            .build()
+    ))
+    .build();
+
+// 发送请求获取响应
+McpResponse response = mcpService.chat(request);
+
+// 输出响应内容
+System.out.println(response.getMessage().getContent());</code></pre>
+            </div>
+
+            <!-- 流式响应 -->
+            <div class="tab-pane fade" id="stream" role="tabpanel" aria-labelledby="stream-tab">
+                <h3 class="mb-4">流式响应功能</h3>
+                <p>流式响应允许模型生成内容时逐步返回给客户端，而不是等待完整响应生成后一次性返回，提供更好的用户体验。</p>
+                
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    在聊天界面开启"流式响应"选项，即可体验打字机效果的实时响应。
+                </div>
+                
+                <div class="mt-4 mb-5">
+                    <a href="/chat" class="btn btn-primary">
+                        <i class="bi bi-lightning-charge me-2"></i>体验流式响应
+                    </a>
+                </div>
+
+                <h4 class="mt-5 mb-3">示例代码</h4>
+                <pre><code class="language-java">// 创建流式请求
+McpRequest request = McpRequest.builder()
+    .model("gpt-3.5-turbo")
+    .messages(List.of(
+        McpMessageDto.builder()
+            .role("user")
+            .content("请写一篇关于人工智能的短文")
+            .build()
+    ))
+    .stream(true)  // 启用流式响应
+    .build();
+
+// 获取SSE发送器
+SseEmitter emitter = mcpService.chatStream(request);
+
+// 客户端JavaScript处理流式响应
+/*
+const eventSource = new EventSource('/api/mcp/chat/stream');
+eventSource.onmessage = function(event) {
+    const data = JSON.parse(event.data);
+    // 更新UI显示部分响应
+    updateChatUI(data.message.content);
+    
+    // 如果是最后一条消息，关闭连接
+    if (data.done) {
+        eventSource.close();
+    }
+};
+*/</code></pre>
+            </div>
+
+            <!-- 工具调用 -->
+            <div class="tab-pane fade" id="tools" role="tabpanel" aria-labelledby="tools-tab">
+                <h3 class="mb-4">工具调用功能</h3>
+                <p>MCP协议支持工具调用（Function Calling），允许模型调用预定义的函数执行特定任务，如查询数据库、调用API、执行计算等。</p>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">工具调用流程</h5>
+                    </div>
+                    <div class="card-body">
+                        <ol>
+                            <li>定义工具函数及其参数规范</li>
+                            <li>在MCP请求中指定可用工具</li>
+                            <li>模型决定是否调用工具及如何调用</li>
+                            <li>服务端执行工具函数并返回结果</li>
+                            <li>模型根据工具执行结果生成最终响应</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <h4 class="mt-5 mb-3">示例代码</h4>
+                <pre><code class="language-java">// 定义工具函数
+List&lt;Map&lt;String, Object&gt;&gt; tools = List.of(
+    Map.of(
+        "type", "function",
+        "function", Map.of(
+            "name", "get_weather",
+            "description", "获取指定城市的天气信息",
+            "parameters", Map.of(
+                "type", "object",
+                "properties", Map.of(
+                    "city", Map.of(
+                        "type", "string",
+                        "description", "城市名称"
+                    ),
+                    "date", Map.of(
+                        "type", "string",
+                        "description", "日期，格式为YYYY-MM-DD"
+                    )
+                ),
+                "required", List.of("city")
+            )
+        )
+    )
+);
+
+// 创建带工具的MCP请求
+McpRequest request = McpRequest.builder()
+    .model("gpt-4")
+    .messages(List.of(
+        McpMessageDto.builder()
+            .role("user")
+            .content("北京今天天气怎么样？")
+            .build()
+    ))
+    .tools(tools)  // 指定可用工具
+    .build();
+
+// 发送请求获取响应
+McpResponse response = mcpService.chat(request);</code></pre>
+            </div>
+
+            <!-- 多模态 -->
+            <div class="tab-pane fade" id="multimodal" role="tabpanel" aria-labelledby="multimodal-tab">
+                <h3 class="mb-4">多模态功能</h3>
+                <p>MCP协议支持多模态输入和输出，包括文本、图像、音频等多种形式，使AI应用能够处理更丰富的内容类型。</p>
+                
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="demo-card p-4">
+                            <div class="demo-icon">
+                                <i class="bi bi-image"></i>
+                            </div>
+                            <h4>图像理解</h4>
+                            <p>上传图片，AI可以分析图像内容并回答相关问题，如图像描述、物体识别等。</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="demo-card p-4">
+                            <div class="demo-icon">
+                                <i class="bi bi-mic"></i>
+                            </div>
+                            <h4>语音交互</h4>
+                            <p>支持语音输入和输出，实现更自然的人机对话体验。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <h4 class="mt-5 mb-3">示例代码</h4>
+                <pre><code class="language-java">// 创建包含图像的多模态请求
+List&lt;Map&lt;String, Object&gt;&gt; multimodalMessages = List.of(
+    Map.of(
+        "role", "user",
+        "content", List.of(
+            Map.of(
+                "type", "text",
+                "text", "这张图片里有什么？"
+            ),
+            Map.of(
+                "type", "image_url",
+                "image_url", Map.of(
+                    "url", "data:image/jpeg;base64,/9j/4AAQSkZJRg...",
+                    "detail", "high"
+                )
+            )
+        )
+    )
+);
+
+// 创建多模态MCP请求
+McpRequest request = McpRequest.builder()
+    .model("gpt-4-vision")
+    .messages(multimodalMessages)
+    .build();
+
+// 发送请求获取响应
+McpResponse response = mcpService.chat(request);</code></pre>
+            </div>
+
+            <!-- API文档 -->
+            <div class="tab-pane fade" id="api" role="tabpanel" aria-labelledby="api-tab">
+                <h3 class="mb-4">API文档</h3>
+                <p>MCP协议定义了一组标准化的API接口，用于应用与大语言模型服务之间的通信。</p>
+                
+                <div class="accordion" id="apiAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingOne">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                <strong>POST /api/mcp/chat</strong> - 发送聊天请求
+                            </button>
+                        </h2>
+                        <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#apiAccordion">
+                            <div class="accordion-body">
+                                <h5>请求参数</h5>
+                                <pre><code class="language-json">{
+  "sessionId": "可选，会话ID",
+  "model": "gpt-3.5-turbo",
+  "messages": [
+    {
+      "role": "user",
+      "content": "你好，请介绍一下MCP协议"
+    }
+  ],
+  "systemPrompt": "可选，系统提示词",
+  "temperature": 0.7,
+  "maxTokens": 1000
+}</code></pre>
+                                <h5>响应格式</h5>
+                                <pre><code class="language-json">{
+  "sessionId": "会话ID",
+  "message": {
+    "role": "assistant",
+    "content": "MCP (Model Context Protocol) 是一种开放的通信协议...",
+    "id": "msg_123456",
+    "timestamp": 1679012345678
+  },
+  "model": "gpt-3.5-turbo",
+  "done": true,
+  "usageTokens": 156,
+  "requestId": "req_abcdef"
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingTwo">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                <strong>POST /api/mcp/chat/stream</strong> - 流式聊天请求
+                            </button>
+                        </h2>
+                        <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#apiAccordion">
+                            <div class="accordion-body">
+                                <p>与普通聊天请求参数相同，但会以Server-Sent Events (SSE)形式返回流式响应。</p>
+                                <h5>流式响应示例</h5>
+                                <pre><code class="language-text">event: message
+data: {"sessionId":"sess_123","message":{"role":"assistant","content":"M","id":"msg_456","timestamp":1679012345678},"model":"gpt-3.5-turbo","done":false}
+
+event: message
+data: {"sessionId":"sess_123","message":{"role":"assistant","content":"MCP","id":"msg_456","timestamp":1679012345678},"model":"gpt-3.5-turbo","done":false}
+
+event: message
+data: {"sessionId":"sess_123","message":{"role":"assistant","content":"MCP 是","id":"msg_456","timestamp":1679012345678},"model":"gpt-3.5-turbo","done":false}
+
+... 更多流式内容 ...
+
+event: message
+data: {"sessionId":"sess_123","message":{"role":"assistant","content":"MCP 是一种开放的通信协议，旨在标准化大模型应用开发。","id":"msg_456","timestamp":1679012345678},"model":"gpt-3.5-turbo","done":true,"usageTokens":25,"requestId":"req_abcdef"}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingThree">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                                <strong>会话管理API</strong>
+                            </button>
+                        </h2>
+                        <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#apiAccordion">
+                            <div class="accordion-body">
+                                <ul class="list-group mb-3">
+                                    <li class="list-group-item"><strong>POST /api/mcp/sessions</strong> - 创建新会话</li>
+                                    <li class="list-group-item"><strong>GET /api/mcp/sessions/{sessionId}</strong> - 获取会话信息</li>
+                                    <li class="list-group-item"><strong>GET /api/mcp/sessions</strong> - 获取会话列表</li>
+                                    <li class="list-group-item"><strong>DELETE /api/mcp/sessions/{sessionId}</strong> - 删除会话</li>
+                                    <li class="list-group-item"><strong>GET /api/mcp/sessions/{sessionId}/messages</strong> - 获取会话消息历史</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 试用按钮 -->
+        <div class="text-center mt-5">
+            <a href="/chat" class="btn btn-lg btn-primary">
+                <i class="bi bi-chat-text me-2"></i>立即试用MCP
+            </a>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="bg-light py-4 mt-auto">
+        <div class="container">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <p class="mb-0">MCP Demo &copy; 2023 | <a href="https://mcp.so/" target="_blank">MCP 官方文档</a></p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.7.0/build/highlight.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化代码高亮
+            document.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
+        });
+    </script>
+</body>
+</html>
