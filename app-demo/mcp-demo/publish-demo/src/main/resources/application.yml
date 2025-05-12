@@ -1,0 +1,41 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: publish-demo
+  ai:
+    mcp:
+      servers:
+        fetch:
+          url: http://localhost:8090/api/v1/fetch
+        xhs:
+          url: http://localhost:8090/api/v1/xhs
+
+# DeepSeek API配置
+deepseek:
+  api:
+    url: https://api.ap.siliconflow.com/v1/chat/completions
+    token: sk-jmuydnkziqcpvvzyeymaeyqawtjvzwupcuauyrzwtqzkmrlz
+    model: deepseek-ai/DeepSeek-V3
+
+# 内容生成配置
+content:
+  # 默认主题配置
+  default-themes:
+    - 美食探店
+    - 旅行日记
+    - 生活方式
+    - 时尚穿搭
+    - 数码科技
+  # 抓取网页数量限制
+  max-fetch-pages: 3
+  # 每个笔记最大图片数量
+  max-images-per-note: 9
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.example.publishdemo: DEBUG
+    org.springframework.web: INFO 
