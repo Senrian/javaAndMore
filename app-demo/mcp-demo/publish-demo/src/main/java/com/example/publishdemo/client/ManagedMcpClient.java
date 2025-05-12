@@ -58,7 +58,7 @@ public class ManagedMcpClient {
             }
             return "无法获取内容";
         } catch (Exception e) {
-            log.error("获取网页内容失败: {}", e.getMessage(), e);
+            log.error("获取网页内容失败 : {}", e.getMessage(), e);
             return "获取内容时出错: " + e.getMessage();
         }
     }
