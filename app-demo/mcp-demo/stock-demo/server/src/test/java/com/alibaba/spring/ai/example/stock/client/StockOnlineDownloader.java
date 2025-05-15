@@ -121,9 +121,9 @@ public class StockOnlineDownloader {
         // 首先尝试从东方财富获取数据
         System.out.println("正在从东方财富获取股票数据...");
         List<StockInfo> eastmoneyStocks = downloadFromEastmoney();
-        List<StockInfo> sinaStocks = downloadFromSina();
+        // List<StockInfo> sinaStocks = downloadFromSina();
         stocks.addAll(eastmoneyStocks);
-        stocks.addAll(sinaStocks);
+        // stocks.addAll(sinaStocks);
         return stocks;
     }
 

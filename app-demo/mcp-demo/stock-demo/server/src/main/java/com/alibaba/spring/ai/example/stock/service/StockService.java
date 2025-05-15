@@ -45,7 +45,8 @@ import java.util.Map;
 @Service
 public class StockService {
     private static final Logger logger = LoggerFactory.getLogger(StockService.class);
-    private static final String BASE_URL = "https://push2.eastmoney.com/api/qt/stock/get";
+    // 使用新浪财经API
+    private static final String BASE_URL = "https://hq.sinajs.cn";
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final ObjectMapper objectMapper = new ObjectMapper();
     
@@ -54,20 +55,10 @@ public class StockService {
     public StockService() {
         this.restClient = RestClient.builder()
                 .baseUrl(BASE_URL)
-                .defaultHeader("Accept", MediaType.APPLICATION_JSON_VALUE)
+                .defaultHeader("Accept", "*/*")
+                .defaultHeader("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36")
+                .defaultHeader("Referer", "https://finance.sina.com.cn")
                 .build();
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public record StockData(
-            @JsonProperty("f43") Double currentPrice,    // Latest price (in cents)
-            @JsonProperty("f44") Double highPrice,       // Highest price (in cents)
-            @JsonProperty("f45") Double lowPrice,        // Lowest price (in cents)
-            @JsonProperty("f46") Double openPrice,       // Opening price (in cents)
-            @JsonProperty("f47") Double volume,          // Trading volume (in lots)
-            @JsonProperty("f48") Double amount,          // Trading amount (in yuan)
-            @JsonProperty("f57") String code,            // Stock code
-            @JsonProperty("f58") String name) {          // Stock name
     }
 
     @JsonSerialize
@@ -84,8 +75,16 @@ public class StockService {
     }
 
     @Tool(name = "getStockInfo", description = "Get real-time stock information for the specified stock code")
-    public StockInfo getStockInfo(String stockCode) {
+    public StockInfo getStockInfo(@ToolParam(description = "股票代码，6位数字") String stockCode) {
         try {
+            // 输出参数值，帮助调试
+            logger.info("收到股票代码参数: {}", stockCode);
+            
+            // Validate stock code is not null
+            if (stockCode == null) {
+                throw new IllegalArgumentException("Stock code cannot be null");
+            }
+            
             // Validate stock code format
             if (!stockCode.matches("^[0-9]{6}$")) {
                 throw new IllegalArgumentException("Stock code must be 6 digits");
@@ -93,52 +92,92 @@ public class StockService {
 
             logger.info("Fetching stock information for {}", stockCode);
             
-            // Eastmoney API parameters
-            String secid = stockCode.startsWith("6") ? "1." + stockCode : "0." + stockCode;
+            return fetchRealStockData(stockCode);
+        } catch (IllegalArgumentException e) {
+            logger.error("Parameter error: {}", e.getMessage());
+            throw e;
+        }
+    }
+    
+    // 从API获取实际数据
+    private StockInfo fetchRealStockData(String stockCode) {
+        try {
+            // 为股票代码添加市场前缀
+            String prefix;
+            if (stockCode.startsWith("6") || stockCode.startsWith("5")) {
+                prefix = "sh"; // 上证
+            } else {
+                prefix = "sz"; // 深证
+            }
+            String symbol = prefix + stockCode;
             
+            // 调用新浪API
             String response = restClient.get()
                     .uri(uriBuilder -> uriBuilder
-                            .queryParam("secid", secid)
-                            .queryParam("fields", "f43,f44,f45,f46,f47,f48,f57,f58")
+                            .path("/list=" + symbol)
                             .build())
-                    .accept(MediaType.APPLICATION_JSON)
                     .retrieve()
                     .body(String.class);
 
             logger.info("Raw response: {}", response);
 
-            JsonNode root = objectMapper.readTree(response);
-            JsonNode data = root.path("data");
-            
-            if (data.isMissingNode()) {
-                logger.warn("No stock data found");
-                throw new IllegalArgumentException("No information found for stock code " + stockCode);
+            // 新浪API返回的格式：var hq_str_sh600519="贵州茅台,1811.010,1811.000,1839.000,1849.000,1808.000,1838.990,1839.000,23835138,43665543541.000,200,1838.990,3600,1838.000,3100,1837.000,1200,1836.000,3900,1835.000,100,1839.000,100,1839.990,2600,1840.000,800,1841.000,400,1842.000,100,2023-05-10,15:00:00,00,";
+            if (response == null || response.isEmpty() || !response.contains("\"")) {
+                throw new IllegalArgumentException("No data found for stock code " + stockCode);
             }
-
-            StockData stockData = objectMapper.treeToValue(data, StockData.class);
-            logger.info("Parsed data: {}", stockData);
-
-            if (stockData == null || stockData.name() == null) {
+            
+            // 从响应中提取股票数据
+            int startQuote = response.indexOf("\"");
+            int endQuote = response.lastIndexOf("\"");
+            
+            if (startQuote == -1 || endQuote == -1 || startQuote == endQuote) {
                 throw new IllegalArgumentException("Invalid data format for stock code " + stockCode);
             }
+            
+            String dataStr = response.substring(startQuote + 1, endQuote);
+            String[] fields = dataStr.split(",");
+            
+            if (fields.length < 33) {
+                throw new IllegalArgumentException("Insufficient data fields for stock code " + stockCode);
+            }
+            
+            // 解析数据
+            // fields[0]: 股票名称
+            // fields[1]: 今日开盘价 (Opening Price)
+            // fields[2]: 昨日收盘价 (Previous Close)
+            // fields[3]: 当前价格 (Current Price)
+            // fields[4]: 今日最高价 (Highest Price)
+            // fields[5]: 今日最低价 (Lowest Price)
+            // fields[8]: 成交量 (Trading Volume) - 手
+            // fields[9]: 成交额 (Trading Amount) - 元
+            
+            String name = fields[0];
+            double openPrice = Double.parseDouble(fields[1]);
+            double currentPrice = Double.parseDouble(fields[3]);
+            double highPrice = Double.parseDouble(fields[4]);
+            double lowPrice = Double.parseDouble(fields[5]);
+            double volume = Double.parseDouble(fields[8]) / 100.0; // 转换为万手
+            double amount = Double.parseDouble(fields[9]) / 100000000.0; // 转换为亿元
+            
+            logger.info("Parsed data for {}: name={}, price={}", stockCode, name, currentPrice);
 
-            // Convert data format
+            // 返回股票信息对象
             return new StockInfo(
                     stockCode,
-                    stockData.name(),
-                    stockData.currentPrice() / 100.0, // Convert to yuan
-                    stockData.highPrice() / 100.0,    // Convert to yuan
-                    stockData.lowPrice() / 100.0,     // Convert to yuan
-                    stockData.openPrice() / 100.0,    // Convert to yuan
-                    stockData.volume() / 10000.0,     // Convert to 10,000 lots
-                    stockData.amount() / 100000000.0  // Convert to 100 million yuan
+                    name,
+                    currentPrice,
+                    highPrice,
+                    lowPrice,
+                    openPrice,
+                    volume,
+                    amount
             );
-        } catch (IllegalArgumentException e) {
-            logger.error("Parameter error: {}", e.getMessage());
-            throw e;
+        } catch (RestClientException e) {
+            logger.error("网络请求失败: {}", e.getMessage());
+            throw new RuntimeException("Network error - " + e.getMessage());
         } catch (Exception e) {
-            logger.error("Failed to get stock {} information: {}", stockCode, e.getMessage(), e);
-            throw new RuntimeException("Failed to get stock " + stockCode + " information: " + e.getMessage());
+            logger.error("处理数据失败: {}", e.getMessage());
+            throw new RuntimeException("Data processing error - " + e.getMessage());
         }
     }
 }

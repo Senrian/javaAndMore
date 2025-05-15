@@ -193,7 +193,7 @@ public class StockPredictionTask {
      */
     private static List<String> loadDefaultStockCodes() {
         List<String> codes = new ArrayList<>();
-        String csvPath = "/Users/sixinran/IdeaProjects/spring-ai-alibaba-examples/spring-ai-alibaba-mcp-example/starter-example/server/starter-stock-server/src/test/java/com/alibaba/spring/ai/example/stock/client/stocks.csv";
+        String csvPath = "/Users/sixinran/IdeaProjects/javaAndMore/app-demo/mcp-demo/stock-demo/server/src/test/java/com/alibaba/spring/ai/example/stock/client/stocks_hot.csv";
         
         try (BufferedReader reader = new BufferedReader(new FileReader(csvPath))) {
             String line;
@@ -307,15 +307,14 @@ public class StockPredictionTask {
             }
         }, getSecondsUntilNextHour(9, 30), 24 * 60 * 60, TimeUnit.SECONDS);
         
-        // 2. 每5分钟获取一次股票数据并分析
+        // 2. 每5s获取一次股票数据并分析
         scheduler.scheduleAtFixedRate(() -> {
             try {
                 if (isTradingTime()) {
-                    System.out.println("\n=====" + getCurrentTimeStamp() + " 开始分析股票数据=====");
                     for (String code : stockCodes) {
                         fetchAndAnalyzeStock(code);
                         // 避免频繁请求
-                        TimeUnit.MILLISECONDS.sleep(500);
+                        TimeUnit.MILLISECONDS.sleep(3000);
                     }
                     
                     // 输出可能涨停的股票
@@ -324,7 +323,7 @@ public class StockPredictionTask {
             } catch (Exception e) {
                 System.err.println("获取股票数据任务异常: " + e.getMessage());
             }
-        }, getSecondsUntilNextMinute(5), 5 * 60, TimeUnit.SECONDS);
+        }, 1, 20, TimeUnit.SECONDS);
         
         // 3. A股收盘后总结当日预测结果
         scheduler.scheduleAtFixedRate(() -> {
@@ -345,7 +344,7 @@ public class StockPredictionTask {
         try {
             // 调用股票API
             CallToolResult result = client.callTool(new CallToolRequest("getStockInfo",
-                    Map.of("stockCode", stockCode)));
+                    Map.of("arg0", stockCode)));
             
             // 解析结果
             String resultText = result.content().get(0).toString();
@@ -362,15 +361,13 @@ public class StockPredictionTask {
                 List<StockData> history = STOCK_HISTORY_MAP.get(stockCode);
                 history.add(data);
                 // 只保留最近10条记录
-                if (history.size() > 10) {
+                if (history.size() > 1000) {
                     history.remove(0);
                 }
                 
                 // 更新技术指标
                 updateTechnicalIndicators(stockCode, data);
                 
-                // 打印股票信息
-                System.out.println(data);
             } else {
                 System.err.println("解析股票 " + stockCode + " 响应失败");
             }
@@ -506,16 +503,14 @@ public class StockPredictionTask {
      * 预测可能涨停的股票
      */
     private static void predictBreakoutStocks() {
-        System.out.println("\n***** 可能涨停股票预测分析 *****");
-        
+
         // 过滤出评分高于60分的股票
         List<TechnicalIndicators> highScoreStocks = STOCK_INDICATORS_MAP.values().stream()
-                .filter(i -> i.breakoutScore >= 60)
+                .filter(i -> i.breakoutScore >= 45)
                 .sorted((a, b) -> b.breakoutScore - a.breakoutScore)
                 .collect(Collectors.toList());
         
         if (highScoreStocks.isEmpty()) {
-            System.out.println("当前没有发现可能涨停的股票");
             return;
         }
         
@@ -644,68 +639,12 @@ public class StockPredictionTask {
     /**
      * 计算距离下一个N分钟的秒数
      */
-    private static long getSecondsUntilNextMinute(int minuteInterval) {
-        LocalDateTime now = LocalDateTime.now();
-        int minute = now.getMinute();
-        int targetMinute = ((minute / minuteInterval) + 1) * minuteInterval;
-        LocalDateTime nextTime = LocalDateTime.of(now.toLocalDate(), 
-                LocalTime.of(now.getHour(), targetMinute % 60));
-        if (targetMinute >= 60) {
-            nextTime = nextTime.plusHours(1);
-        }
-        return java.time.Duration.between(now, nextTime).getSeconds();
-    }
     
     /**
      * 获取当前目录下的JAR文件路径
      */
     private static String getCurrentJarPath() {
-        try {
-            // 优先使用用户目录下的路径
-            String userDir = System.getProperty("user.dir");
-            System.out.println("当前工作目录: " + userDir);
-            
-            // 创建可能的JAR路径
-            String defaultJarPath = Paths.get(userDir, "target", "starter-stock-server-1.0.0.jar").toString();
-            File jarFile = new File(defaultJarPath);
-            
-            // 检查JAR文件是否存在
-            if (jarFile.exists() && jarFile.isFile()) {
-                System.out.println("已找到JAR文件: " + defaultJarPath);
-                return defaultJarPath;
-            } else {
-                System.out.println("JAR文件不存在于: " + defaultJarPath);
-                
-                // 尝试找到备用路径
-                String altPath = Paths.get(userDir, "..", "..", "..", "starter-example", "server", "starter-stock-server", "target", "starter-stock-server-1.0.0.jar").normalize().toString();
-                File altJarFile = new File(altPath);
-                
-                if (altJarFile.exists() && altJarFile.isFile()) {
-                    System.out.println("找到备用JAR文件: " + altPath);
-                    return altPath;
-                }
-                
-                // 显示target目录内容以帮助调试
-                File targetDir = new File(Paths.get(userDir, "target").toString());
-                if (targetDir.exists() && targetDir.isDirectory()) {
-                    System.out.println("target目录内容:");
-                    File[] files = targetDir.listFiles();
-                    if (files != null) {
-                        for (File file : files) {
-                            System.out.println("  - " + file.getName());
-                        }
-                    }
-                }
-                
-                // 最后才使用硬编码路径
-                return "/Users/sixinran/IdeaProjects/spring-ai-alibaba-examples/spring-ai-alibaba-mcp-example/starter-example/server/starter-stock-server/target/starter-stock-server-1.0.0.jar";
-            }
-        } catch (Exception e) {
-            System.err.println("获取JAR路径时出错: " + e.getMessage());
-            e.printStackTrace();
-            // 使用硬编码路径作为备选
-            return "/Users/sixinran/IdeaProjects/spring-ai-alibaba-examples/spring-ai-alibaba-mcp-example/starter-example/server/starter-stock-server/target/starter-stock-server-1.0.0.jar";
-        }
+        return "/Users/sixinran/IdeaProjects/javaAndMore/app-demo/mcp-demo/stock-demo/server/target/starter-stock-server-1.0.0.jar";
     }
     
     /**

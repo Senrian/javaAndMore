@@ -95,7 +95,7 @@ public class ClientStdio {
             System.out.println("\n测试不存在的股票代码 (999999):");
             try {
                 CallToolResult invalidStockResult = client.callTool(new CallToolRequest("getStockInfo",
-                        Map.of("stockCode", "999999")));
+                        Map.of("arg0", "999999")));
                 System.out.println("股票信息: " + invalidStockResult);
             } catch (Exception e) {
                 System.out.println("预期错误: " + e.getMessage());
@@ -105,7 +105,7 @@ public class ClientStdio {
             System.out.println("\n测试非数字股票代码 (abc123):");
             try {
                 CallToolResult invalidCodeResult = client.callTool(new CallToolRequest("getStockInfo",
-                        Map.of("stockCode", "abc123")));
+                        Map.of("arg0", "abc123")));
                 System.out.println("股票信息: " + invalidCodeResult);
             } catch (Exception e) {
                 System.out.println("预期错误: " + e.getMessage());
@@ -115,7 +115,7 @@ public class ClientStdio {
             System.out.println("\n测试位数不足的股票代码 (12345):");
             try {
                 CallToolResult insufficientDigitsResult = client.callTool(new CallToolRequest("getStockInfo",
-                        Map.of("stockCode", "12345")));
+                        Map.of("arg0", "12345")));
                 System.out.println("股票信息: " + insufficientDigitsResult);
             } catch (Exception e) {
                 System.out.println("预期错误: " + e.getMessage());
@@ -125,7 +125,7 @@ public class ClientStdio {
             System.out.println("\n测试位数超过的股票代码 (1234567):");
             try {
                 CallToolResult excessDigitsResult = client.callTool(new CallToolRequest("getStockInfo",
-                        Map.of("stockCode", "1234567")));
+                        Map.of("arg0", "1234567")));
                 System.out.println("股票信息: " + excessDigitsResult);
             } catch (Exception e) {
                 System.out.println("预期错误: " + e.getMessage());
@@ -139,7 +139,7 @@ public class ClientStdio {
             for (String stockCode : stocksToTest) {
                 try {
                     CallToolResult result = client.callTool(new CallToolRequest("getStockInfo",
-                            Map.of("stockCode", stockCode)));
+                            Map.of("arg0", stockCode)));
                     System.out.println("成功获取股票 " + stockCode + " 的信息");
                 } catch (Exception e) {
                     System.out.println("获取股票 " + stockCode + " 信息失败: " + e.getMessage());
@@ -168,7 +168,7 @@ public class ClientStdio {
         try {
             Instant start = Instant.now();
             CallToolResult stockResult = client.callTool(new CallToolRequest("getStockInfo",
-                    Map.of("stockCode", stockCode)));
+                    Map.of("arg0", stockCode)));
             Duration elapsed = Duration.between(start, Instant.now());
 
             // 从结果字符串中提取JSON部分
@@ -247,13 +247,13 @@ public class ClientStdio {
                 }
                 
                 // 最后才使用硬编码路径
-                return "/Users/sixinran/IdeaProjects/spring-ai-alibaba-examples/spring-ai-alibaba-mcp-example/starter-example/server/starter-stock-server/target/starter-stock-server-1.0.0.jar";
+                return "/Users/sixinran/IdeaProjects/javaAndMore/app-demo/mcp-demo/stock-demo/server/target/starter-stock-server-1.0.0.jar";
             }
         } catch (Exception e) {
             System.err.println("获取JAR路径时出错: " + e.getMessage());
             e.printStackTrace();
             // 使用硬编码路径作为备选
-            return "/Users/sixinran/IdeaProjects/spring-ai-alibaba-examples/spring-ai-alibaba-mcp-example/starter-example/server/starter-stock-server/target/starter-stock-server-1.0.0.jar";
+            return "/Users/sixinran/IdeaProjects/javaAndMore/app-demo/mcp-demo/stock-demo/server/target/starter-stock-server-1.0.0.jar";
         }
     }
 }
